@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ja-cup AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root {
+      --bg: #0b0f0f;
+      --panel: #111616;
+      --panel-light: #1a2222;
+      --teal: #2dd4bf;
+      --text: #e5f4f3;
+      --muted: #8aa9a7;
+      --radius: 14px;
+    }
+
+    body {
+      margin: 0;
+      background: #0b0f0f;
+      color: var(--text);
+      font-family: system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 900px;
+      background: var(--panel);
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.05);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 18px 22px;
+      background: #0f1414;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: var(--teal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 20px;
+      color: #00332f;
+    }
+
+    .chat {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .msg {
+      max-width: 75%;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .user {
+      align-self: flex-end;
+      background: var(--teal);
+      color: #00332f;
+    }
+
+    .assistant {
+      align-self: flex-start;
+      background: var(--panel-light);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .composer {
+      padding: 14px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      background: #0c1111;
+      display: flex;
+      gap: 10px;
+    }
+
+    textarea {
+      flex: 1;
+      resize: none;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--panel-light);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+
+    button {
+      background: var(--teal);
+      border: none;
+      padding: 0 18px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #00332f;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="brand">
+        <div class="brand-logo">J</div>
+        <div class="brand-title">Ja-cup AI</div>
+      </div>
+    </div>
+
+    <div class="chat" id="chatLog"></div>
+
+    <div class="composer">
+      <textarea id="userInput" rows="2" placeholder="Message Ja-cup AI…"></textarea>
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const chatLog = document.getElementById("chatLog");
+    const userInput = document.getElementById("userInput");
+
+    let messages = [];
+
+    function append(role, content) {
+      const div = document.createElement("div");
+      div.className = "msg " + role;
+      div.textContent = content;
+      chatLog.appendChild(div);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      append("user", text);
+      messages.push({ role: "user", content: text });
+      userInput.value = "";
+
+      const res = await fetch("https://ja-cup.jacob-navaratne.workers.dev/", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    model: "qwen/qwen3-32b",
+    messages: messages,
+    stream: false
+  })
+});
+
+      const data = await res.json();
+      const reply = data.choices?.[0]?.message?.content || "[No reply]";
+
+      append("assistant", reply);
+      messages.push({ role: "assistant", content: reply });
+    }
+
+    document.getElementById("sendBtn").onclick = sendMessage;
+
+    userInput.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
